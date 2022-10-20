@@ -1,0 +1,1 @@
+(indeces "stx.net.uri.Test")

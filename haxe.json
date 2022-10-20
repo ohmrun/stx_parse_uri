@@ -1,0 +1,23 @@
+{
+  "build" : {
+    "-D"   : ["no-deprecation-warnings"],
+    "-cp"  : "src/main/haxe",
+    "-lib" : ["stx_pico","stx_nano","stx_test","stx_parse"],
+    "unit" : {
+      "--macro" : [
+        "include('stx.net.uri',true)",
+        "include('stx.net.parse.parser.term.Uri',true)"
+      ],
+      "interp" : {
+        "--interp" : true
+      }
+    },
+    "test" : {
+      "-resource" : ["tests.pml@tests"],
+      "-main"     : "stx.net.uri.Test",
+      "interp"    : {
+        "--interp" : true
+      }
+    }
+  }
+}
