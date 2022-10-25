@@ -12,8 +12,21 @@ import stx.net.uri.*;
  * from  : http://www.ietf.org/rfc/rfc2396.txt
  */
  
+final alts = __.parse().alts;
 
 class Uri {
+  static public function tp<Pi,Pii,R>(fn:Pi->Pii->R){
+    return __.decouple(fn);
+  }
+  static public function ct<T>(l:T,r:T):String{
+    return '$l$r';
+  }
+  static public function ctlo<T>(l:Option<T>,r:T):String{
+    return l.map((l:T) -> '$l$r').defv('$r');
+  }
+  static public function ctro<T>(l:T,r:Option<T>):String{
+    return r.map((r:T) -> '$l$r').defv('$l');
+  }
   static public function id(str:String){
     return __.parse().id(str);
   }
@@ -24,7 +37,65 @@ class Uri {
     return __.option(l).zip(__.option(r)).map(__.decouple((x,y) -> '$x$y'));
   }
   
-  
+  static public final ALPHA         = Parse.alpha;
+  static public final DIGIT         = Parse.digit;
+  static public final HEXDIG        = Regex("^[a-fA-F0-9]");
+
+  static public final unreserved    = ALPHA.or(DIGIT).or(id("-")).or(id(".")).or(id("_")).or(id("~"));
+  static public final pct_encoded   = id("#")._and(HEXDIG).and(HEXDIG).then(__.decouple((x,y) -> '$x$y'));
+  static public final sub_delims    = Regex("[!\\$&'\\(\\)\\*\\+,;=]");
+  static public final reg_name      = unreserved.or(pct_encoded).or(sub_delims).many().tokenize();
+  static public final h16           = RepeatedUpto(HEXDIG,4).tokenize();
+  static public final ls32          = h16.and(id(":")).then(tp(ct)).and(h16).then(tp(ct)).or(IPv4address);
+  static public final IPV6Section   = h16.and(id(":")).then(tp(ct));
+  static public final IPV6Address   = 
+    RepeatedOnlyUpto(IPV6Section,6).tokenize().and(ls32).then(tp(ct))
+    .or(
+      id("::").and(RepeatedOnlyUpto(IPV6Section,5).tokenize()).then(tp(ct)).and(ls32).then(tp(ct))
+    ).or(
+      h16.option()
+         .and(id("::"))
+         .then(tp(ctlo))
+         .and(RepeatedOnlyUpto(IPV6Section,4).tokenize()).then(tp(ct))
+         .and(ls32)
+         .then(tp(ct))
+    ).or(
+      IPV6Section.option().and(h16).then(tp(ctlo))
+        .option()
+        .and(id("::"))
+        .then(tp(ctlo))
+        .and(RepeatedOnlyUpto(IPV6Section,3).tokenize())
+        .then(tp(ct))
+        .and(ls32)
+        .then(tp(ct))
+    ).or(
+      RepeatedOnlyUpto(IPV6Section,2).tokenize().and(h16).then(tp(ct))
+      .option()
+      .and(id("::")).then(tp(ctlo))
+      .and(RepeatedOnlyUpto(IPV6Section,2).tokenize()).then(tp(ct))
+      .and(ls32).then(tp(ct))
+    ).or(
+      RepeatedOnlyUpto(IPV6Section,3).tokenize().and(h16).then(tp(ct))
+      .option()
+      .and(id("::")).then(tp(ctlo))
+      .and(IPV6Section).then(tp(ct))
+      .and(ls32).then(tp(ct))
+    ).or(
+      RepeatedOnlyUpto(IPV6Section,4).tokenize().and(h16).then(tp(ct))
+      .option()
+      .and(id("::")).then(tp(ctlo))
+      .and(ls32).then(tp(ct))
+    ).or(
+      RepeatedOnlyUpto(IPV6Section,5).tokenize().and(h16).then(tp(ct))
+      .option()
+      .and(id("::")).then(tp(ctlo))
+      .and(h16).then(tp(ct))
+    ).or(
+      RepeatedOnlyUpto(IPV6Section,6).tokenize().and(h16).then(tp(ct))
+      .option()
+      .and(id("::")).then(tp(ctlo))
+    );
+
   static public var digit						= Parse.digit;
   static public var alpha 					= Parse.alpha;
   static public var alphanum 				= Parse.alphanum;
@@ -38,11 +109,6 @@ class Uri {
   static public var escaped         =
     '%'.id()._and(hex).and(hex).then( function(x) return Std.string(x.fst() << 8 | x.snd()) );
     
-  static public var markR 					= "[-_.!~*'()]";
-  static public var mark 						= Regex(markR);
-  
-  static public var unreserved = 
-  [Parse.alphanum, mark].ors();
     
   static public var reservedR				= "[;/?:+@&=~$,]";
   static public var reserved				= Regex(reservedR);
@@ -75,7 +141,8 @@ class Uri {
   static public var port 						= Parse.digit.many().tokenize().then(Std.parseInt);
   static public var digP 						= Parse.digit.one_many().tokenize().then(Std.parseInt);
   
-  static public var IPv4addressR 		= "[1-9]+.[1-9]+.[1-9]+.[1-9]+";
+  //static public var IPV4Byte        = 
+  static public var IPv4addressR 		= "[1-9]+\\.[1-9]+\\.[1-9]+\\.[1-9]+";
   static public var IPv4address     = Regex(IPv4addressR);
     
   static public var toplabel     		= 
@@ -85,7 +152,7 @@ class Uri {
     alphanum.or( alphanum.and_with( alphanum.or('-'.id()).many().tokenize().and_with(alphanum,sBnd),sBnd) );
   
   static public var  hostname      	= 
-    domainlabel.and_with('.'.id(), sBnd).and_with( toplabel.and_with( '.'.id().option() , oBnd ), sBnd );
+    domainlabel.and_('.'.id()).and(toplabel).then(tp(ct)).and('.'.id().option()).then(tp(ctro));
     
   static public var host						=
     hostname.or( IPv4address  );
@@ -100,11 +167,6 @@ class Uri {
   userinfo.and_('@'.id()).option().and_with( hostport , 
     function(a, b) { return switch (a) { case Some(v) :  Server.Authenticated(v, b); default : Server.Simple(b); } } 
   );
-
-  static public var reg_nameR     	= 
-    "$,;:@&=+";
-  static public var reg_name      	=
-    [unreserved,escaped].ors().or( Regex(reg_nameR) ).one_many().tokenize();
     
   static public var  authority			= server.then( Authority.Serve ).or(reg_name.then(Authority.Reg));
     

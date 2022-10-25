@@ -2,7 +2,7 @@
   "build" : {
     "-D"   : ["no-deprecation-warnings"],
     "-cp"  : "src/main/haxe",
-    "-lib" : ["stx_pico","stx_nano","stx_test","stx_parse"],
+    "-lib" : ["stx_pico","stx_nano","stx_test","stx_parse","tink_xml","hre"],
     "unit" : {
       "--macro" : [
         "include('stx.net.uri',true)",
@@ -13,7 +13,8 @@
       }
     },
     "test" : {
-      "-resource" : ["tests.pml@tests"],
+      "-D" : ["stx.parse.switches.debug=false"],
+      "-resource" : ["tests.pml@tests","vendor/iri-tests/iris.xml@iris","vendor/ips/IPv6.txt@ipv6"],
       "-main"     : "stx.net.uri.Test",
       "interp"    : {
         "--interp" : true

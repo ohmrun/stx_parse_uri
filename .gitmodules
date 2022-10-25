@@ -1,0 +1,6 @@
+[submodule "vendor/iri-tests"]
+	path = vendor/iri-tests
+	url = https://github.com/cweb/iri-tests
+[submodule "vendor/ips"]
+	path = vendor/ips
+	url = https://github.com/Viswalahiri/IPs.git
