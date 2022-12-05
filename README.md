@@ -1,3 +1,3 @@
 #Under development
 
-Quieries to ohmrun@pm.me
+Queries to ohmrun@pm.me

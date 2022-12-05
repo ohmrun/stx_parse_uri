@@ -13,11 +13,15 @@
       }
     },
     "test" : {
-      "-D" : ["stx.parse.switches.debug=false"],
+      "-D" : ["stx.parse.switches.debug=false","debug"],
       "-resource" : ["tests.pml@tests","vendor/iri-tests/iris.xml@iris","vendor/ips/IPv6.txt@ipv6"],
       "-main"     : "stx.net.uri.Test",
       "interp"    : {
         "--interp" : true
+      },
+      "nodejs" : {
+        "-lib" : ["hxnodejs"],
+        "-js"  : "test.js"
       }
     }
   }

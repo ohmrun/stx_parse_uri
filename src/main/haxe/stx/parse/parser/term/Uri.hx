@@ -46,52 +46,52 @@ class Uri {
   static public final sub_delims    = Regex("[!\\$&'\\(\\)\\*\\+,;=]");
   static public final reg_name      = unreserved.or(pct_encoded).or(sub_delims).many().tokenize();
   static public final h16           = RepeatedUpto(HEXDIG,4).tokenize();
-  static public final ls32          = h16.and(id(":")).then(tp(ct)).and(h16).then(tp(ct)).or(IPv4address);
-  static public final IPV6Section   = h16.and(id(":")).then(tp(ct));
-  static public final IPV6Address   = 
-    RepeatedOnlyUpto(IPV6Section,6).tokenize().and(ls32).then(tp(ct))
+  static public final ls32          = h16.and(id(":")).then(tp(ct)).and(h16).then(tp(ct)).or(IPv4address());
+  static public final IPv6Section   = h16.and(id(":")).then(tp(ct));
+  static public final IPv6Address   = 
+    RepeatedOnly(IPv6Section,6).tokenize().and(ls32).then(tp(ct))
     .or(
-      id("::").and(RepeatedOnlyUpto(IPV6Section,5).tokenize()).then(tp(ct)).and(ls32).then(tp(ct))
+      id("::").and(RepeatedOnly(IPv6Section,5).tokenize()).then(tp(ct)).and(ls32).then(tp(ct))
     ).or(
       h16.option()
          .and(id("::"))
          .then(tp(ctlo))
-         .and(RepeatedOnlyUpto(IPV6Section,4).tokenize()).then(tp(ct))
+         .and(RepeatedOnly(IPv6Section,4).tokenize()).then(tp(ct))
          .and(ls32)
          .then(tp(ct))
     ).or(
-      IPV6Section.option().and(h16).then(tp(ctlo))
+      IPv6Section.option().and(h16).then(tp(ctlo))
         .option()
         .and(id("::"))
         .then(tp(ctlo))
-        .and(RepeatedOnlyUpto(IPV6Section,3).tokenize())
+        .and(RepeatedOnly(IPv6Section,3).tokenize())
         .then(tp(ct))
         .and(ls32)
         .then(tp(ct))
     ).or(
-      RepeatedOnlyUpto(IPV6Section,2).tokenize().and(h16).then(tp(ct))
+      RepeatedOnlyUpto(IPv6Section,2).tokenize().and(h16).then(tp(ct))
       .option()
       .and(id("::")).then(tp(ctlo))
-      .and(RepeatedOnlyUpto(IPV6Section,2).tokenize()).then(tp(ct))
+      .and(RepeatedOnly(IPv6Section,2).tokenize()).then(tp(ct))
       .and(ls32).then(tp(ct))
     ).or(
-      RepeatedOnlyUpto(IPV6Section,3).tokenize().and(h16).then(tp(ct))
+      RepeatedOnlyUpto(IPv6Section,3).tokenize().and(h16).then(tp(ct))
       .option()
       .and(id("::")).then(tp(ctlo))
-      .and(IPV6Section).then(tp(ct))
+      .and(h16).then(tp(ct))
       .and(ls32).then(tp(ct))
     ).or(
-      RepeatedOnlyUpto(IPV6Section,4).tokenize().and(h16).then(tp(ct))
+      RepeatedOnlyUpto(IPv6Section,4).tokenize().and(h16).then(tp(ct))
       .option()
       .and(id("::")).then(tp(ctlo))
       .and(ls32).then(tp(ct))
     ).or(
-      RepeatedOnlyUpto(IPV6Section,5).tokenize().and(h16).then(tp(ct))
+      RepeatedOnlyUpto(IPv6Section,5).tokenize().and(h16).then(tp(ct))
       .option()
       .and(id("::")).then(tp(ctlo))
       .and(h16).then(tp(ct))
     ).or(
-      RepeatedOnlyUpto(IPV6Section,6).tokenize().and(h16).then(tp(ct))
+      RepeatedOnlyUpto(IPv6Section,6).tokenize().and(h16).then(tp(ct))
       .option()
       .and(id("::")).then(tp(ctlo))
     );
@@ -142,8 +142,10 @@ class Uri {
   static public var digP 						= Parse.digit.one_many().tokenize().then(Std.parseInt);
   
   //static public var IPV4Byte        = 
-  static public var IPv4addressR 		= "[1-9]+\\.[1-9]+\\.[1-9]+\\.[1-9]+";
-  static public var IPv4address     = Regex(IPv4addressR);
+  static public var IPv4addressR 		= "[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+";
+  static public function IPv4address(){
+    return Regex(IPv4addressR);
+  }
     
   static public var toplabel     		= 
     alpha.or( alpha.and_with( alphanum.or('-'.id() ).many().tokenize().and_with(alphanum,sBnd),sBnd ) );
@@ -155,7 +157,7 @@ class Uri {
     domainlabel.and_('.'.id()).and(toplabel).then(tp(ct)).and('.'.id().option()).then(tp(ctro));
     
   static public var host						=
-    hostname.or( IPv4address  );
+    hostname.or( IPv4address()  );
   static public var hostport 				=
     host.and_with( ':'.id()._and(port).option(), Host.Named.fn().then(Some) );
     
